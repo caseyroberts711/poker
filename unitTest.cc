@@ -70,7 +70,6 @@ std::pair<GameRules&, std::vector<TestCase>> texasTests() {
   return {
     *texasRules.get(),
     {
-      // odds from http://www.propokertools.com/simulations
       TestCase({ {handFromString("AH AD"), 0.5000},
                  {handFromString("AC AS"), 0.5000} },
                mediumEps, false),
@@ -102,7 +101,6 @@ std::pair<GameRules&, std::vector<TestCase>> omahaTests() {
   return {
     *omahaRules.get(),
     {
-      // odds from http://www.propokertools.com/simulations
       TestCase({ {handFromString("AH KD QC JS"), 0.5000},
                  {handFromString("AD KC QS JH"), 0.5000} },
                exactEps, false),
@@ -124,7 +122,7 @@ std::pair<GameRules&, std::vector<TestCase>> omahaTests() {
                largeEps, false),
       TestCase({ {handFromString("3H 3D 3C 3S"), 1.0000},
                  {handFromString("2C 2S 2H 2D"), 0.0000} },
-               largeEps, false),
+               exactEps, false),
     }
   };
 }
@@ -137,7 +135,31 @@ std::pair<GameRules&, std::vector<TestCase>>  bargeTests() {
 std::pair<GameRules&, std::vector<TestCase>>  omahaBargeTests() {
   return {
     *omahaBargeRules.get(),
-    {}
+    {
+      TestCase({ {handFromString("3H 3D 3C 3S"), 1.0000},
+                 {handFromString("2C 2S 2H 2D"), 0.0000} },
+               exactEps, false),
+      TestCase({ {handFromString("AH AD KH KD"), 0.5000},
+                 {handFromString("AC AS KC KS"), 0.5000} },
+               mediumEps, false),
+      TestCase({ {handFromString("AH AD KC KS"), 0.5000},
+                 {handFromString("AC AS KH KD"), 0.5000} },
+               exactEps, false)
+    }
+  };
+}
+std::pair<GameRules&, std::vector<TestCase>>  omahaBargeHands() {
+  return {
+    *omahaBargeRules.get(),
+    {
+      TestCase({ {handFromString("AH AD KH KD"), 0.6058},
+                 {handFromString("QC QS JC JS"), 0.3942} },
+               largeEps, false),
+      // That's right, 7654ds is a strong favourite against AKQJr, flush draws matter!
+      TestCase({ {handFromString("7H 6H 5D 4D"), 0.5945},
+                 {handFromString("AH KD QC JS"), 0.4055} },
+               largeEps, false)
+    }
   };
 }
 
@@ -146,7 +168,8 @@ int main() {
     texasTests(),
     omahaTests(),
     bargeTests(),
-    omahaBargeTests()
+    omahaBargeTests(),
+    omahaBargeHands()
   };
   for (int suiteNum = 0; suiteNum < testSuites.size(); ++suiteNum) {
     auto& rules = testSuites[suiteNum].first;

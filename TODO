@@ -1,5 +1,8 @@
 -- Should do --
 
+. Parallelize unit tests
+  . This should be easy, I think any of us could do this
+
 . Parallelize preprocessing
 
 . Make sure I am still solving HoldEm/Omaha perfectly...

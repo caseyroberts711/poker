@@ -1,0 +1,13 @@
+-- Should do --
+
+. Parallelize preprocessing
+
+. Make sure I am still solving HoldEm/Omaha perfectly...
+  . Have an option to Monte Carlo to test the Monte Carlo too :D
+
+-- Not actually ever going to do --
+
+. When finding best omaha rank, I can do preprocessing on 7.
+  . But I have to keep the two from the hand seperate from the 5 from the board, so the key will be two bit sets. This
+  is 2.8e9 though.... That will be hard to preprocess and store on my machine :(
+  . I could do 2 and 4 though, that is doable, but is ugly and only buys a factor of 2 in the end.

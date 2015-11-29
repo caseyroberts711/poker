@@ -46,7 +46,7 @@ class EquityCalculator {
  public:
   static std::vector<double> calculate(
       const GameRules& rules,
-      const std::vector<std::vector<Card>>& hands,
+      const std::vector<std::vector<Card>> hands,
       const size_t numGamesToPlay,
       const bool solveExhaustively) {
 

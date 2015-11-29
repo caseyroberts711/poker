@@ -1,6 +1,7 @@
 // Copyright 2015- Casey Roberts. All rights reserved.
 // @author Casey Roberts
 
+#include <future>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -151,8 +152,8 @@ std::vector<TestCase> omahaBargeHands() {
     TestCase({ {handFromString("AH AD KH KD"), 0.6058},
                {handFromString("QC QS JC JS"), 0.3942} },
              rules, largeEps, false),
-    TestCase({ {handFromString("AH AD KH KD"), 0.6561},
-               {handFromString("QH QD JH JD"), 0.3439} },
+    TestCase({ {handFromString("AH AD KH KD"), 0.6570},
+               {handFromString("QH QD JH JD"), 0.3430} },
              rules, largeEps, false),
     TestCase({ {handFromString("AH AD KH KD"), 0.6258},
                {handFromString("QH QC JH JC"), 0.3742} },
@@ -182,6 +183,39 @@ std::vector<TestCase> omahaBargeHands() {
 }
 
 int main() {
+
+  // Worked functions
+  //   work is performed async
+  //   postProcessing is performed in sync
+  auto work = [](const TestCase& testCase) -> std::vector<double> {
+    return EquityCalculator::calculate(testCase.rules(),
+                                       testCase.hands(),
+                                       kNumGamesToPlay,
+                                       testCase.solveExhaustively());
+  };
+  auto postProcessing = [](const int suiteNum,
+                           const int caseNum,
+                           const TestCase& testCase,
+                           const std::vector<double>& result) {
+    for (size_t playerNum = 0; playerNum < testCase.hands().size(); ++playerNum) {
+      if (!isNear(result[playerNum],
+                  testCase.winProbabilities()[playerNum],
+                  testCase.eps())) {
+        fprintf(
+            stderr,
+            "assert failed: suiteNum %d, caseNum %d, playerNum %d, "
+            "received %lf, expected %lf, eps %lf\n",
+            suiteNum,
+            caseNum,
+            playerNum,
+            result[playerNum],
+            testCase.winProbabilities()[playerNum],
+            testCase.eps());
+      }
+    }
+  };
+
+  // start computing all results async
   std::vector<std::vector<TestCase>> testSuites {
     texasTests(),
     omahaTests(),
@@ -189,33 +223,30 @@ int main() {
     omahaBargeTests(),
     omahaBargeHands()
   };
-
+  std::vector<std::future<std::vector<double>>> futureResults;
   for (int suiteNum = 0; suiteNum < testSuites.size(); ++suiteNum) {
     auto& testCases = testSuites[suiteNum];
     for (int caseNum = 0; caseNum < testCases.size(); ++caseNum) {
-      const auto& testCase = testCases[caseNum];
-      std::vector<double> calculatedProbabilities = 
-          EquityCalculator::calculate(testCase.rules(),
-                                      testCase.hands(),
-                                      kNumGamesToPlay,
-                                      testCase.solveExhaustively());
-      for (size_t playerNum = 0; playerNum < testCase.hands().size(); ++playerNum) {
-        if (!isNear(calculatedProbabilities[playerNum],
-                    testCase.winProbabilities()[playerNum],
-                    testCase.eps())) {
-          fprintf(
-              stderr,
-              "assert failed: suiteNum %d, caseNum %d, playerNum %d, "
-              "received %lf, expected %lf, eps %lf\n",
-              suiteNum,
-              caseNum,
-              playerNum,
-              calculatedProbabilities[playerNum],
-              testCase.winProbabilities()[playerNum],
-              testCase.eps());
-        }
-      }
+      futureResults.push_back(
+          std::async(
+              std::launch::async,
+              work,
+              testCases[caseNum]));
     }
   }
+  // extract all results
+  std::vector<std::vector<double>> results;
+  for (auto& future : futureResults) {
+    results.push_back(future.get());
+  }
+  // output all results (must be serial since performs IO)
+  int upto = 0;
+  for (int suiteNum = 0; suiteNum < testSuites.size(); ++suiteNum) {
+    auto& testCases = testSuites[suiteNum];
+    for (int caseNum = 0; caseNum < testCases.size(); ++caseNum) {
+      postProcessing(suiteNum, caseNum, testCases[caseNum], results[upto++]);
+    }
+  }
+
   return 0;
 }
